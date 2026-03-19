@@ -1,5 +1,5 @@
 
-SERVER = '....\\SQLEXPRESS'     #ten sever database id may admmin
+SERVER = '(local)\\SQLEXPRESS'     #ten sever database id may admmin
 DATABASE = 'QuanLySinhVien'
-USERNAME = 'nametk'         #nhap ten tk da cap
-PASSWORD = '******'         #nhap mat khau login databaase
+USERNAME = 'sv1'         #nhap ten tk da cap
+PASSWORD = '123456'         #nhap mat khau login databaase
