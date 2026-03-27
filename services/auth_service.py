@@ -1,6 +1,5 @@
 from database.connect import get_connection
 
-
 def login(username, password):
     conn = get_connection()
     if not conn:

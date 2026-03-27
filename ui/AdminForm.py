@@ -7,6 +7,7 @@ from datetime import datetime
 from services.admin_service import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import re
 
 class AdminForm:
     def __init__(self, root, ma_admin, login_win):
@@ -155,16 +156,47 @@ class AdminForm:
             self.sv_entries[k].insert(0, str(v) if v else "")
 
     def add_sv(self):
-        data = [self.sv_entries[k].get() for k in ["MaSV", "HoTen", "GioiTinh", "NgaySinh", "SDT", "DiaChi", "MaLop", "NamThu", "KhoaHoc"]]
-        if add_sinhvien(data):
+        data = [
+            self.sv_entries["MaSV"].get(),
+            self.sv_entries["HoTen"].get(),
+            self.sv_entries["GioiTinh"].get(),
+            self.sv_entries["NgaySinh"].get(),
+            self.sv_entries["MaLop"].get(),
+            self.sv_entries["SDT"].get(),
+            self.sv_entries["DiaChi"].get(),
+            self.sv_entries["NamThu"].get(),
+            self.sv_entries["KhoaHoc"].get()
+        ]
+
+        result = add_sinhvien(data)
+
+        if result == True:
             messagebox.showinfo("OK", "Thêm thành công")
             self.load_sv()
+        else:
+            messagebox.showerror("Lỗi SQL", result)
 
     def update_sv(self):
-        data = [self.sv_entries[k].get() for k in ["MaSV", "HoTen", "GioiTinh", "NgaySinh", "SDT", "DiaChi", "MaLop", "NamThu", "KhoaHoc"]]
-        if update_sinhvien(data[1:] + [data[0]]):
+        data = (
+            self.sv_entries["HoTen"].get(),
+            self.sv_entries["GioiTinh"].get(),
+            self.sv_entries["NgaySinh"].get(),
+            self.sv_entries["SDT"].get(),
+            self.sv_entries["DiaChi"].get(),
+            self.sv_entries["MaLop"].get(),
+            self.sv_entries["NamThu"].get(),
+            self.sv_entries["KhoaHoc"].get(),
+            self.sv_entries["MaSV"].get()
+        )
+
+        result = update_sinhvien(data)
+
+        if result == True:
             messagebox.showinfo("OK", "Cập nhật thành công")
             self.load_sv()
+        else:
+            messagebox.showerror("Lỗi SQL", result)
+
 
     def delete_sv(self):
         masv = self.sv_entries["MaSV"].get()
@@ -173,53 +205,120 @@ class AdminForm:
             self.load_sv()
    #giảng viên
     def ui_giangvien(self):
-        frame = tk.Frame(self.tab_teachers)
-        frame.pack(pady=10)
+        # ===== FRAME CHA =====
+        main_frame = tk.Frame(self.tab_teachers)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # Dòng 1: Mã GV và Họ Tên
-        tk.Label(frame, text="Mã GV").grid(row=0, column=0, padx=5, pady=2)
-        self.gv_magv = tk.Entry(frame, width=20);
-        self.gv_magv.grid(row=0, column=1, padx=5, pady=2)
-        tk.Label(frame, text="Họ tên").grid(row=0, column=2, padx=5, pady=2)
-        self.gv_hoten = tk.Entry(frame, width=20);
-        self.gv_hoten.grid(row=0, column=3, padx=5, pady=2)
+        left_frame = tk.Frame(main_frame)
+        left_frame.pack(side="left", fill="both", expand=True, padx=5)
 
-        # Dòng 2: Giới tính và Địa chỉ (BỎ NGÀY SINH)
-        tk.Label(frame, text="Giới tính").grid(row=1, column=0, padx=5, pady=2)
-        self.gv_gt = ttk.Combobox(frame, values=["Nam", "Nữ"], width=17);
-        self.gv_gt.grid(row=1, column=1, padx=5, pady=2);
+        right_frame = tk.Frame(main_frame)
+        right_frame.pack(side="left", fill="both", expand=True, padx=5)
+
+        # ===== FORM GIẢNG VIÊN =====
+        form_frame = tk.LabelFrame(left_frame, text="Thông tin giảng viên")
+        form_frame.pack(fill="x", pady=5)
+
+        tk.Label(form_frame, text="Mã GV").grid(row=0, column=0, padx=5, pady=2)
+        self.gv_magv = tk.Entry(form_frame)
+        self.gv_magv.grid(row=0, column=1, padx=5)
+
+        tk.Label(form_frame, text="Họ tên").grid(row=0, column=2)
+        self.gv_hoten = tk.Entry(form_frame)
+        self.gv_hoten.grid(row=0, column=3, padx=5)
+
+        tk.Label(form_frame, text="Giới tính").grid(row=1, column=0)
+        self.gv_gt = ttk.Combobox(form_frame, values=["Nam", "Nữ"])
+        self.gv_gt.grid(row=1, column=1)
         self.gv_gt.current(0)
-        tk.Label(frame, text="Địa chỉ").grid(row=1, column=2, padx=5, pady=2)
-        self.gv_dc = tk.Entry(frame, width=20);
-        self.gv_dc.grid(row=1, column=3, padx=5, pady=2)
 
-        # Dòng 3: Email và Mã Khoa
-        tk.Label(frame, text="Email").grid(row=2, column=0, padx=5, pady=2)
-        self.gv_email = tk.Entry(frame, width=20);
-        self.gv_email.grid(row=2, column=1, padx=5, pady=2)
-        tk.Label(frame, text="Mã khoa").grid(row=2, column=2, padx=5, pady=2)
-        self.gv_khoa = tk.Entry(frame, width=20);
-        self.gv_khoa.grid(row=2, column=3, padx=5, pady=2)
+        tk.Label(form_frame, text="Địa chỉ").grid(row=1, column=2)
+        self.gv_dc = tk.Entry(form_frame)
+        self.gv_dc.grid(row=1, column=3)
 
-        btn_frame = tk.Frame(self.tab_teachers)
-        btn_frame.pack(pady=10)
-        tk.Button(btn_frame, text="Thêm", bg="green", fg="white", width=10, command=self.add_gv).pack(side=tk.LEFT,
-                                                                                                      padx=5)
-        tk.Button(btn_frame, text="Sửa", bg="blue", fg="white", width=10, command=self.update_gv).pack(side=tk.LEFT,
-                                                                                                       padx=5)
-        tk.Button(btn_frame, text="Xóa", bg="orange", width=10, command=self.delete_gv).pack(side=tk.LEFT, padx=5)
-        tk.Button(btn_frame, text="Làm mới", width=10, command=self.load_gv).pack(side=tk.LEFT, padx=5)
+        tk.Label(form_frame, text="Email").grid(row=2, column=0)
+        self.gv_email = tk.Entry(form_frame)
+        self.gv_email.grid(row=2, column=1)
 
-        # Cấu hình Treeview (BỎ CỘT NGÀY SINH)
+        tk.Label(form_frame, text="Mã khoa").grid(row=2, column=2)
+        self.gv_khoa = tk.Entry(form_frame)
+        self.gv_khoa.grid(row=2, column=3)
+
+        # ===== BUTTON =====
+        btn_frame = tk.Frame(left_frame)
+        btn_frame.pack(pady=5)
+
+        tk.Button(btn_frame, text="Thêm", bg="green", fg="white",
+                  command=self.add_gv).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(btn_frame, text="Sửa", bg="blue", fg="white",
+                  command=self.update_gv).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(btn_frame, text="Xóa", bg="orange",
+                  command=self.delete_gv).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(btn_frame, text="Làm mới",
+                  command=self.load_gv).pack(side=tk.LEFT, padx=5)
+
+        # ===== BẢNG GIẢNG VIÊN =====
         cols = ("magv", "hoten", "gt", "dc", "email", "khoa")
-        self.tree_gv = ttk.Treeview(self.tab_teachers, columns=cols, show="headings")
+        self.tree_gv = ttk.Treeview(left_frame, columns=cols, show="headings")
+
         headers = ["Mã GV", "Họ Tên", "Giới tính", "Địa chỉ", "Email", "Mã Khoa"]
         for c, h in zip(cols, headers):
             self.tree_gv.heading(c, text=h)
-            self.tree_gv.column(c, width=150, anchor="center")
-        self.tree_gv.pack(fill=tk.BOTH, expand=True, padx=10)
+            self.tree_gv.column(c, width=120, anchor="center")
+
+        self.tree_gv.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        # ===== PHÂN CÔNG =====
+        pc_frame = tk.LabelFrame(right_frame, text="Phân công giảng dạy")
+        pc_frame.pack(fill="x", pady=5)
+
+        tk.Label(pc_frame, text="Mã HP").grid(row=0, column=0)
+        self.pc_mahp = ttk.Combobox(pc_frame, width=15)
+        self.pc_mahp.grid(row=0, column=1)
+
+        tk.Label(pc_frame, text="Mã lớp").grid(row=0, column=2)
+        self.pc_malop = ttk.Combobox(pc_frame, width=15)
+        self.pc_malop.grid(row=0, column=3)
+
+        tk.Label(pc_frame, text="Học kỳ").grid(row=1, column=0)
+        self.pc_hocky = tk.Entry(pc_frame)
+        self.pc_hocky.grid(row=1, column=1)
+
+        tk.Label(pc_frame, text="Năm học").grid(row=1, column=2)
+        self.pc_namhoc = tk.Entry(pc_frame)
+        self.pc_namhoc.grid(row=1, column=3)
+
+        tk.Label(pc_frame, text="Phòng").grid(row=2, column=0)
+        self.pc_phong = tk.Entry(pc_frame)
+        self.pc_phong.grid(row=2, column=1)
+
+        tk.Button(pc_frame, text="Phân công", bg="green", fg="white",
+                  command=self.add_pc).grid(row=3, column=1)
+
+        tk.Button(pc_frame, text="Xóa PC", bg="red", fg="white",
+                  command=self.delete_pc).grid(row=3, column=2)
+
+        # ===== BẢNG PHÂN CÔNG =====
+        cols = ("mahp", "tenhp", "lop", "hk", "nam", "phong")
+        self.tree_pc = ttk.Treeview(right_frame, columns=cols, show="headings")
+
+        headers = ["Mã HP", "Tên HP", "Lớp", "Học kỳ", "Năm", "Phòng"]
+        for c, h in zip(cols, headers):
+            self.tree_pc.heading(c, text=h)
+            self.tree_pc.column(c, width=120, anchor="center")
+
+        self.tree_pc.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        # ===== EVENT =====
         self.tree_gv.bind("<<TreeviewSelect>>", self.on_gv_select)
+
+        # ===== LOAD DATA =====
         self.load_gv()
+        self.load_combobox_data()
+
 
     def load_gv(self):
         self.tree_gv.delete(*self.tree_gv.get_children())
@@ -229,39 +328,130 @@ class AdminForm:
             clean_row = [str(item) if item is not None else "" for item in r]
             self.tree_gv.insert("", tk.END, values=clean_row)
 
+    def load_hp_lop(self):
+        conn = get_connection()
+        cursor = conn.cursor()
 
+        # Học phần
+        cursor.execute("SELECT MaHP FROM HOCPHAN")
+        self.list_hp.delete(0, tk.END)
+        for row in cursor.fetchall():
+            self.list_hp.insert(tk.END, row[0])
+
+        # Lớp
+        cursor.execute("SELECT MaLop FROM LOPHOC")
+        self.list_lop.delete(0, tk.END)
+        for row in cursor.fetchall():
+            self.list_lop.insert(tk.END, row[0])
+
+        conn.close()
+
+    def load_combobox_data(self):
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT MaHP FROM HOCPHAN")
+        self.pc_mahp['values'] = [r[0] for r in cursor.fetchall()]
+
+        cursor.execute("SELECT MaLop FROM LOPHOC")
+        self.pc_malop['values'] = [r[0] for r in cursor.fetchall()]
+
+        conn.close()
 
     def on_gv_select(self, event):
         selected = self.tree_gv.selection()
-        if not selected: return
-        r = self.tree_gv.item(selected[0])['values']
+        if not selected:
+            return
+
+        item = self.tree_gv.item(selected[0])
+        r = item["values"]
+
+        if not r:
+            return
+
+        # ===== ĐỔ DỮ LIỆU VÀO FORM =====
         self.gv_magv.delete(0, tk.END)
         self.gv_magv.insert(0, r[0])
+
         self.gv_hoten.delete(0, tk.END)
         self.gv_hoten.insert(0, r[1])
+
         self.gv_gt.set(r[2])
-        self.gv_ns.delete(0, tk.END)
-        self.gv_ns.insert(0, r[3])
+
         self.gv_dc.delete(0, tk.END)
-        self.gv_dc.insert(0, r[4])
+        self.gv_dc.insert(0, r[3])
+
         self.gv_email.delete(0, tk.END)
-        self.gv_email.insert(0, r[5])
+        self.gv_email.insert(0, r[4])
+
         self.gv_khoa.delete(0, tk.END)
-        self.gv_khoa.insert(0, r[6])
+        self.gv_khoa.insert(0, r[5])
+
+        # ===== LOAD PHÂN CÔNG =====
+        magv = r[0]
+        print("Đang load phân công cho:", magv)  # debug
+
+        self.load_pc_by_gv(magv)
+
+    def load_pc_by_gv(self, magv):
+        # Xóa bảng cũ
+        self.tree_pc.delete(*self.tree_pc.get_children())
+
+        # gọi service
+        rows = get_pc_by_giangvien(magv)
+
+        print("DATA SERVICE:", rows)  # debug
+
+        # Đổ vào bảng
+        for row in rows:
+            clean_row = [str(item) if item is not None else "" for item in row]
+            self.tree_pc.insert("", "end", values=clean_row)
+
+    def get_selected_hp_lop(self):
+        hp = [self.list_hp.get(i) for i in self.list_hp.curselection()]
+        lop = [self.list_lop.get(i) for i in self.list_lop.curselection()]
+        return hp, lop
+
+    def is_valid_email(self, email):
+        pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+        return re.match(pattern, email)
 
     def add_gv(self):
-        # Lấy dữ liệu (không có ngày sinh)
-        data = (self.gv_magv.get().strip(), self.gv_hoten.get().strip(), self.gv_gt.get(),
-                self.gv_dc.get().strip(), self.gv_email.get().strip(), self.gv_khoa.get().strip())
+        data = (
+            self.gv_magv.get().strip(),
+            self.gv_hoten.get().strip(),
+            self.gv_gt.get(),
+            self.gv_dc.get().strip(),
+            self.gv_email.get().strip(),
+            self.gv_khoa.get().strip()
+        )
+
         if not data[0]:
             messagebox.showwarning("Lỗi", "Mã GV không được để trống")
             return
+
         if add_giangvien(data):
-            messagebox.showinfo("OK", "Thêm thành công");
+            messagebox.showinfo("OK", "Thêm giảng viên thành công")
             self.load_gv()
+        else:
+            messagebox.showerror("Lỗi", "Không thể thêm giảng viên")
 
     def update_gv(self):
-        data = (self.gv_hoten.get().strip(), self.gv_gt.get(), self.gv_ns.get().strip(), self.gv_dc.get().strip(), self.gv_email.get().strip(), self.gv_khoa.get().strip(), self.gv_magv.get().strip())
+        email = self.gv_email.get().strip()
+
+        if not self.is_valid_email(email):
+            messagebox.showerror("Lỗi", "Email không hợp lệ!")
+            return
+
+        data = (
+            self.gv_hoten.get().strip(),
+            self.gv_gt.get(),
+            self.gv_dc.get().strip(),
+            email,
+            self.gv_khoa.get().strip(),
+            self.gv_magv.get().strip()
+        )
+
         if update_giangvien(data):
             messagebox.showinfo("OK", "Cập nhật thành công")
             self.load_gv()
@@ -273,6 +463,49 @@ class AdminForm:
             if delete_giangvien(magv):
                 messagebox.showinfo("OK", "Đã xóa giảng viên")
                 self.load_gv()
+
+    def add_pc(self):
+        # Lấy dữ liệu từ các ô nhập liệu
+        magv = self.gv_magv.get().strip()
+        mahp = self.pc_mahp.get().strip()
+        malop = self.pc_malop.get().strip()
+        hocky = self.pc_hocky.get().strip()
+        namhoc = self.pc_namhoc.get().strip()
+        phong = self.pc_phong.get().strip()
+
+        # 1. Kiểm tra không được để trống các trường quan trọng
+        if not (magv and mahp and malop and hocky and namhoc):
+            messagebox.showwarning("Thông báo", "Vui lòng nhập đầy đủ: Mã GV, Mã HP, Lớp, Học kỳ và Năm học!")
+            return
+
+        data = (magv, mahp, malop, hocky, namhoc, phong)
+
+        # 2. Gọi service để thực thi lệnh INSERT vào SQL
+        if add_phancong(data):
+            messagebox.showinfo("Thành công", f"Đã phân công môn {mahp} cho giảng viên {magv}")
+            # Load lại bảng hiển thị để cập nhật dữ liệu mới
+            if hasattr(self, 'load_pc_by_gv'):
+                self.load_pc_by_gv(magv)
+        else:
+            messagebox.showerror("Lỗi",
+                                 "Không thể phân công. Vui lòng kiểm tra lại Mã HP hoặc Mã Lớp có tồn tại không!")
+
+    def delete_pc(self):
+        selected = self.tree_pc.selection()
+        if not selected:
+            return
+
+        row = self.tree_pc.item(selected[0])['values']
+
+        magv = self.gv_magv.get()
+        mahp = row[0]
+        malop = row[2]
+        hocky = row[3]
+        namhoc = row[4]
+
+        if delete_phancong(magv, mahp, malop, hocky, namhoc):
+            messagebox.showinfo("OK", "Đã xóa phân công")
+            self.load_pc_by_gv(magv)
 
 # ====================== HỌC PHẦN ======================
     def ui_hocphan(self):
@@ -357,35 +590,26 @@ class AdminForm:
 
 # ====================== BÁO CÁO ======================
     def ui_baocao(self):
-        # Khung chứa các nút bấm
         btn_frame = tk.Frame(self.tab_report)
         btn_frame.pack(pady=10)
 
-        tk.Button(btn_frame, text="Tải dữ liệu", bg="#3498db", fg="white",
-                  command=self.load_rp).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Tải dữ liệu", bg="#3498db", fg="white", command=self.load_rp).pack(side=tk.LEFT,
+                                                                                                      padx=5)
+        tk.Button(btn_frame, text="Xuất Excel", bg="#2ecc71", fg="white", command=self.export_excel).pack(side=tk.LEFT,
+                                                                                                          padx=5)
+        tk.Button(btn_frame, text="Xem biểu đồ điểm", bg="#9b59b6", fg="white", command=self.show_chart).pack(
+            side=tk.LEFT, padx=5)
 
-        tk.Button(btn_frame, text="Xuất Excel", bg="#2ecc71", fg="white",
-                  command=self.export_excel).pack(side=tk.LEFT, padx=5)
-
-        tk.Button(btn_frame, text="Xem biểu đồ điểm", bg="#9b59b6", fg="white",
-                  command=self.show_chart).pack(side=tk.LEFT, padx=5)
-
-        # Bảng hiển thị danh sách (Treeview)
         cols = ("msv", "ten", "hp", "diem")
         self.tree_rp = ttk.Treeview(self.tab_report, columns=cols, show="headings")
-
         headers = ["Mã SV", "Họ Tên", "Học Phần", "Điểm TK"]
-        widths = [100, 250, 250, 100]
 
-        for c, h, w in zip(cols, headers, widths):
+        for c, h in zip(cols, headers):
             self.tree_rp.heading(c, text=h)
-            self.tree_rp.column(c, width=w, anchor="center")
-            if c == "ten" or c == "hp":
-                self.tree_rp.column(c, anchor="w")  # Tên và HP căn trái
+            self.tree_rp.column(c, width=150, anchor="center")
 
-        self.tree_sv.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
-
-        # Tự động tải dữ liệu khi mở tab
+        # FIX: Sửa từ tree_sv thành tree_rp
+        self.tree_rp.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         self.load_rp()
 
     def load_rp(self):
