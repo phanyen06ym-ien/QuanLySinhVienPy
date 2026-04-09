@@ -1,11 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox
 
-from ui.FormGiangVien import LecturerForm
-from ui.FormSinhVien import StudentForm
+from ui.LecturerForm import LecturerForm
+from ui.StudentForm import StudentForm
 from ui.AdminForm import AdminForm
 
-from services.auth_service import login, update_password
+from services.AuthService import AuthService
+from database.db import get_connection
 
 class LoginForm:
     def __init__(self, root):
@@ -14,33 +15,60 @@ class LoginForm:
         self.root.geometry("450x350")
         self.root.resizable(False, False)
 
-        tk.Label(root, text="QUẢN LÝ SINH VIÊN", font=("Arial", 18, "bold"), fg="darkblue").pack(pady=25)
+        tk.Label(
+            root,
+            text="QUẢN LÝ SINH VIÊN",
+            font=("Arial", 18, "bold"),
+            fg="darkblue"
+        ).pack(pady=25)
 
         frame = tk.Frame(root)
         frame.pack(pady=10, padx=20)
 
+        # USERNAME
         tk.Label(frame, text="Tài khoản:", font=("Arial", 11)).grid(row=0, column=0, sticky="w", pady=8)
         self.entry_user = tk.Entry(frame, width=25, font=("Arial", 11))
         self.entry_user.grid(row=0, column=1, padx=10)
         self.entry_user.focus()
 
+        # PASSWORD
         tk.Label(frame, text="Mật khẩu:", font=("Arial", 11)).grid(row=1, column=0, sticky="w", pady=8)
         self.entry_pass = tk.Entry(frame, width=25, font=("Arial", 11), show="*")
         self.entry_pass.grid(row=1, column=1, padx=10)
 
+        # SHOW PASSWORD
         self.show_pass_var = tk.IntVar()
-        tk.Checkbutton(root, text="Hiển thị mật khẩu",
-                       variable=self.show_pass_var,
-                       command=self.toggle_pass).pack()
+        tk.Checkbutton(
+            root,
+            text="Hiển thị mật khẩu",
+            variable=self.show_pass_var,
+            command=self.toggle_pass
+        ).pack()
 
-        tk.Button(root, text="ĐĂNG NHẬP",
-                  bg="white", fg="black", bd=2, relief="raised",
-                  font=("Arial", 11, "bold"), width=20,
-                  command=self.handle_login).pack(pady=15)
+        # LOGIN BUTTON
+        tk.Button(
+            root,
+            text="ĐĂNG NHẬP",
+            bg="white",
+            fg="black",
+            bd=2,
+            relief="raised",
+            font=("Arial", 11, "bold"),
+            width=20,
+            command=self.handle_login
+        ).pack(pady=15)
 
-        tk.Button(root, text="Quên mật khẩu?", fg="blue", bd=0,
-                  cursor="hand2", command=self.open_forgot_pwd).pack()
+        # FORGOT PASSWORD
+        tk.Button(
+            root,
+            text="Quên mật khẩu?",
+            fg="blue",
+            bd=0,
+            cursor="hand2",
+            command=self.open_forgot_pwd
+        ).pack()
 
+    # ================= HIỆN / ẨN PASSWORD =================
     def toggle_pass(self):
         if self.show_pass_var.get() == 1:
             self.entry_pass.config(show="")
@@ -57,27 +85,30 @@ class LoginForm:
             return
 
         try:
-            row = login(username, password)
+            row = AuthService.login(username, password)
 
             if not row:
                 messagebox.showerror("Thất bại", "Sai tài khoản hoặc mật khẩu!")
                 return
 
-            vaitro, masv, magv = row
+            # LẤY ĐÚNG DATA TỪ spLogin
+            tendangnhap, vaitro, masv, magv, hoten, makhoa = row
             vaitro = (vaitro or "").strip().upper()
 
             self.root.withdraw()
+
             new_win = tk.Toplevel()
             new_win.protocol("WM_DELETE_WINDOW", lambda: self.root.destroy())
 
-            if vaitro in ["GV", "GIANGVIEN"]:
-                LecturerForm(new_win, magv or username, self.root, vaitro)
+            # PHÂN QUYỀN
+            if vaitro == "GV":
+                LecturerForm(new_win, magv, self.root, vaitro)
 
-            elif vaitro in ["ADMIN"]:
-                AdminForm(new_win, username, self.root)
+            elif vaitro == "ADMIN":
+                AdminForm(new_win, tendangnhap, self.root)
 
-            elif vaitro in ["SV", "SINHVIEN"]:
-                StudentForm(new_win, masv or username, self.root)
+            elif vaitro == "SV":
+                StudentForm(new_win, masv, self.root)
 
             else:
                 messagebox.showerror("Lỗi", "Vai trò không hợp lệ!")
@@ -118,7 +149,7 @@ class LoginForm:
                 return
 
             try:
-                ok = update_password(u, p1)
+                ok = AuthService.update_password(u, p1)
 
                 if not ok:
                     messagebox.showerror("Lỗi", "Tài khoản không tồn tại!")
@@ -130,11 +161,17 @@ class LoginForm:
             except Exception as e:
                 messagebox.showerror("Lỗi", str(e))
 
-        tk.Button(forgot_win, text="Xác nhận",
-                  bg="white", fg="black", bd=2,
-                  command=confirm_change).pack(pady=15)
+        tk.Button(
+            forgot_win,
+            text="Xác nhận",
+            bg="white",
+            fg="black",
+            bd=2,
+            command=confirm_change
+        ).pack(pady=15)
 
 
+# ================= RUN =================
 if __name__ == "__main__":
     root = tk.Tk()
     app = LoginForm(root)
