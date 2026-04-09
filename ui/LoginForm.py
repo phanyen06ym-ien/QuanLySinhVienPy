@@ -1,12 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
-
 from ui.LecturerForm import LecturerForm
 from ui.StudentForm import StudentForm
 from ui.AdminForm import AdminForm
-
 from services.AuthService import AuthService
-from database.db import get_connection
 
 class LoginForm:
     def __init__(self, root):

@@ -1,6 +1,5 @@
 from database.db import Database
 
-
 class StudentService:
 
     # ================= THÔNG TIN =================

@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from services.LecturerService import LecturerService
-from database.db import get_connection
 
 class LecturerForm:
     def __init__(self, root, ma_id, login_win, role):
@@ -32,6 +31,7 @@ class LecturerForm:
         self.ui_info()
         self.ui_classes_subjects()
         self.ui_grades()
+        self.auto_load_first_subject()
 
     # ================= INFO =================
     def ui_info(self):
@@ -84,11 +84,13 @@ class LecturerForm:
         frame_hp = tk.LabelFrame(container, text="Học phần giảng dạy")
         frame_hp.pack(fill=tk.BOTH, expand=True)
 
-        self.tree_hp = ttk.Treeview(frame_hp,
-                                   columns=("mahp", "tenhp", "lop", "hk", "nam", "phong"),
-                                   show="headings")
+        self.tree_hp = ttk.Treeview(
+            frame_hp,
+            columns=("malop", "tenlop", "mahp", "tenhp", "tc", "hk", "nam", "phong"),
+            show="headings"
+        )
 
-        headers = ["Mã HP", "Tên HP", "Lớp", "HK", "Năm", "Phòng"]
+        headers = ["Mã lớp", "Tên lớp", "Mã HP", "Tên HP", "Tín chỉ", "HK", "Năm", "Phòng"]
 
         for c, h in zip(self.tree_hp["columns"], headers):
             self.tree_hp.heading(c, text=h)
@@ -115,18 +117,43 @@ class LecturerForm:
             self.tree_lop.insert("", tk.END,
                                  values=[str(i) if i else "" for i in r])
 
+    def on_subject_click(self, event):
+        sel = self.tree_hp.selection()
+        if not sel:
+            return
+
+        val = self.tree_hp.item(sel[0])["values"]
+
+        # val = (malop, tenlop, mahp, tenhp, tc, hk, nam, phong)
+
+        self.tabs.select(2)
+
+        self.entries["mhp"].delete(0, tk.END)
+        self.entries["mhp"].insert(0, val[2])
+
+        self.entries["hk"].delete(0, tk.END)
+        self.entries["hk"].insert(0, val[5])
+
+        self.entries["nh"].delete(0, tk.END)
+        self.entries["nh"].insert(0, val[6])
+
+        self.load_grades()
+
+
     def load_subjects(self):
         self.tree_hp.delete(*self.tree_hp.get_children())
         rows = LecturerService.get_subjects(self.ma_id)
 
         for r in rows:
             self.tree_hp.insert("", tk.END, values=(
-                r[1],  # MaHP
-                r[2],  # TenHP
-                r[3],  # Lop
-                r[4],  # HK
-                r[5],  # Nam
-                r[6]  # Phong
+                r[0],  # MaLop
+                r[1],  # TenLop
+                r[2],  # MaHP
+                r[3],  # TenHP
+                r[4],  # TinChi
+                r[5],  # HocKy
+                r[6],  # NamHoc
+                r[7]  # PhongHoc
             ))
 
     # ================= ĐIỂM =================
@@ -159,14 +186,21 @@ class LecturerForm:
                   command=self.load_grades).pack(side=tk.LEFT, padx=5)
 
         # Table
-        cols = ("msv", "ten", "mhp", "hk", "nh", "cc", "bt", "gk", "ck", "tk")
+        cols = ("msv", "ten", "lop", "mhp", "tenhp", "tc", "hk", "nh", "cc", "bt", "gk", "ck", "tk")
 
-        self.tree_diem = ttk.Treeview(self.tab2,
-                                     columns=cols,
-                                     show="headings")
+        self.tree_diem = ttk.Treeview(
+            self.tab2,
+            columns=cols,
+            show="headings"
+        )
 
-        for c in cols:
-            self.tree_diem.heading(c, text=c.upper())
+        headers = [
+            "MSV", "Tên", "Lớp", "MHP", "Tên HP", "TC",
+            "HK", "Năm", "CC", "BT", "GK", "CK", "TK"
+        ]
+
+        for c, h in zip(cols, headers):
+            self.tree_diem.heading(c, text=h)
             self.tree_diem.column(c, anchor="center", width=90)
 
         self.tree_diem.pack(fill=tk.BOTH, expand=True)
@@ -174,7 +208,11 @@ class LecturerForm:
         self.tree_diem.bind("<<TreeviewSelect>>", self.on_select)
 
     def load_grades(self):
+        print("ĐANG LOAD...")  # debug
+
         self.tree_diem.delete(*self.tree_diem.get_children())
+
+        self.tree_diem.update()
 
         mhp = self.entries["mhp"].get().strip()
         hk = self.entries["hk"].get().strip()
@@ -184,16 +222,28 @@ class LecturerForm:
             messagebox.showwarning("Thiếu", "Nhập mã học phần")
             return
 
-        rows = LecturerService.get_grades(mhp, hk, nh)
+        rows = LecturerService.get_grades(
+            mhp,
+            hk if hk else None,
+            nh if nh else None
+        )
+
+        print("DATA:", rows)  # debug
+
+        if not rows:
+            messagebox.showinfo("Thông báo", "Không có dữ liệu")
+            return
 
         for r in rows:
-            safe_row = list(r)
-
-            # FIX: đảm bảo đủ 10 cột
-            while len(safe_row) < 10:
-                safe_row.append("")
-
-            self.tree_diem.insert("", tk.END, values=safe_row)
+            self.tree_diem.insert("", tk.END, values=(
+                r[0], r[1], r[2], r[3], r[4],
+                r[5], r[6], r[7],
+                r[8] or 0,
+                r[9] or 0,
+                r[10] or 0,
+                r[11] or 0,
+                r[12] or 0
+            ))
 
     def save_grade(self):
         try:
@@ -207,10 +257,10 @@ class LecturerForm:
                 float(self.entries["gk"].get() or 0),
                 float(self.entries["ck"].get() or 0),
             )
-
             LecturerService.insert_grade(data)
 
             messagebox.showinfo("OK", "Đã lưu")
+
             self.load_grades()
 
         except Exception as e:
@@ -219,16 +269,21 @@ class LecturerForm:
     def delete_grade(self):
         sel = self.tree_diem.selection()
         if not sel:
+            messagebox.showwarning("Thiếu", "Chọn dòng để xóa")
             return
 
         val = self.tree_diem.item(sel[0])["values"]
 
-        # FIX: check đủ dữ liệu
-        if len(val) < 5:
-            messagebox.showerror("Lỗi", f"Dữ liệu không hợp lệ: {val}")
-            return
+        # val = (msv, ten, lop, mhp, tenhp, tc, hk, nh, ...)
 
-        LecturerService.delete_grade(val[0], val[2], val[3], val[4])
+        LecturerService.delete_grade(
+            val[0],  # MaSV
+            val[3],  # MaHP
+            val[6],  # HocKy
+            val[7]  # NamHoc
+        )
+
+        messagebox.showinfo("OK", "Đã xóa")
         self.load_grades()
 
     def on_select(self, event):
@@ -238,35 +293,54 @@ class LecturerForm:
 
         val = self.tree_diem.item(sel[0])["values"]
 
-        keys = ["msv", "mhp", "hk", "nh", "cc", "bt", "gk", "ck"]
-
-        for i, k in enumerate(keys):
-            if i < len(val):  # FIX
-                self.entries[k].delete(0, tk.END)
-                self.entries[k].insert(0, val[i])
-
-    def on_subject_click(self, event):
-        sel = self.tree_hp.selection()
-        if not sel:
-            return
-
-        val = self.tree_hp.item(sel[0])["values"]
-
-        if len(val) < 5:
-            return
-
-        self.tabs.select(2)
+        self.entries["msv"].delete(0, tk.END)
+        self.entries["msv"].insert(0, val[0])
 
         self.entries["mhp"].delete(0, tk.END)
-        self.entries["mhp"].insert(0, val[0])
+        self.entries["mhp"].insert(0, val[3])
 
         self.entries["hk"].delete(0, tk.END)
-        self.entries["hk"].insert(0, val[3])
+        self.entries["hk"].insert(0, val[6])
 
         self.entries["nh"].delete(0, tk.END)
-        self.entries["nh"].insert(0, val[4])
+        self.entries["nh"].insert(0, val[7])
 
-        self.load_grades()
+        self.entries["cc"].delete(0, tk.END)
+        self.entries["cc"].insert(0, val[8])
+
+        self.entries["bt"].delete(0, tk.END)
+        self.entries["bt"].insert(0, val[9])
+
+        self.entries["gk"].delete(0, tk.END)
+        self.entries["gk"].insert(0, val[10])
+
+        self.entries["ck"].delete(0, tk.END)
+        self.entries["ck"].insert(0, val[11])
+
+    def auto_load_first_subject(self):
+        try:
+            rows = LecturerService.get_subjects(self.ma_id)
+
+            if not rows:
+                return
+
+            r = rows[0]
+
+            # r = (MaLop, TenLop, MaHP, TenHP, TinChi, HocKy, NamHoc, PhongHoc)
+
+            self.entries["mhp"].delete(0, tk.END)
+            self.entries["mhp"].insert(0, r[2])
+
+            self.entries["hk"].delete(0, tk.END)
+            self.entries["hk"].insert(0, r[5])
+
+            self.entries["nh"].delete(0, tk.END)
+            self.entries["nh"].insert(0, r[6])
+
+            self.load_grades()
+
+        except Exception as e:
+            print("Auto load lỗi:", e)
 
     def dang_xuat(self):
         self.root.destroy()

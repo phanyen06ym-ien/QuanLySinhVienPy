@@ -1,6 +1,5 @@
 from database.db import Database
 
-
 class LecturerService:
 
     # ================= THÔNG TIN GIẢNG VIÊN =================
@@ -53,16 +52,27 @@ class LecturerService:
 
     # ================= LẤY DANH SÁCH ĐIỂM =================
     @staticmethod
-    def get_grades(mahp, hk, nh):
+    def get_grades(mahp, hk=None, nh=None):
         db = Database()
         try:
             sql = """
-            SELECT *
-            FROM VIEW_BangDiem_Full
-            WHERE MaHP = ? AND HocKy = ? AND NamHoc = ?
-            ORDER BY MaSV
-            """
-            return db.fetchall(sql, (mahp, hk, nh))
+                SELECT *
+                FROM VIEW_BangDiem_Full
+                WHERE MaHP=?
+                """
+            params = [mahp]
+
+            if hk:
+                sql += " AND HocKy=?"
+                params.append(hk)
+
+            if nh:
+                sql += " AND NamHoc LIKE ?"
+                params.append(f"%{nh}%")
+
+            sql += " ORDER BY MaSV"
+
+            return db.fetchall(sql, tuple(params))
         finally:
             db.close()
 
@@ -73,17 +83,6 @@ class LecturerService:
         db = Database()
         try:
             sql = "EXEC spNhapDiem ?, ?, ?, ?, ?, ?, ?, ?"
-            return db.execute(sql, data)
-        finally:
-            db.close()
-
-
-    # ================= SỬA ĐIỂM =================
-    @staticmethod
-    def update_grade(data):
-        db = Database()
-        try:
-            sql = "EXEC spSuaDiem ?, ?, ?, ?, ?, ?, ?, ?"
             return db.execute(sql, data)
         finally:
             db.close()

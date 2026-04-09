@@ -38,10 +38,12 @@ class AdminForm:
         self.tab_teachers = tk.Frame(self.tabs)
         self.tab_courses = tk.Frame(self.tabs)
         self.tab_report = tk.Frame(self.tabs)
+        self.tab_assign = tk.Frame(self.tabs)
 
         self.tabs.add(self.tab_users, text="Quản lý Tài khoản")
         self.tabs.add(self.tab_students, text="Sinh viên")
         self.tabs.add(self.tab_teachers, text="Giảng viên")
+        self.tabs.add(self.tab_assign, text="Phân công")
         self.tabs.add(self.tab_courses, text="Học phần")
         self.tabs.add(self.tab_report, text="Báo cáo & Thống kê")
 
@@ -51,6 +53,7 @@ class AdminForm:
         self.ui_taikhoan()
         self.ui_sinhvien()
         self.ui_giangvien()
+        self.ui_phancong()
         self.ui_hocphan()
         self.ui_baocao()
 
@@ -570,6 +573,149 @@ class AdminForm:
 
             self.gv_khoa.delete(0, tk.END)
             self.gv_khoa.insert(0, v[5])
+
+    def ui_phancong(self):
+        tk.Label(self.tab_assign, text="PHÂN CÔNG GIẢNG DẠY",
+                 font=("Arial", 14, "bold")).pack(pady=5)
+
+        frame = tk.LabelFrame(self.tab_assign, text="Thông tin phân công")
+        frame.pack(fill="x", padx=10, pady=10)
+
+        # ===== INPUT =====
+        tk.Label(frame, text="Mã GV").grid(row=0, column=0)
+        self.pc_gv = tk.Entry(frame)
+        self.pc_gv.grid(row=0, column=1)
+
+        tk.Label(frame, text="Mã HP").grid(row=0, column=2)
+        self.pc_hp = tk.Entry(frame)
+        self.pc_hp.grid(row=0, column=3)
+
+        tk.Label(frame, text="Mã lớp").grid(row=1, column=0)
+        self.pc_lop = tk.Entry(frame)
+        self.pc_lop.grid(row=1, column=1)
+
+        tk.Label(frame, text="Học kỳ").grid(row=1, column=2)
+        self.pc_hk = tk.Entry(frame)
+        self.pc_hk.grid(row=1, column=3)
+
+        tk.Label(frame, text="Năm học").grid(row=2, column=0)
+        self.pc_nam = tk.Entry(frame)
+        self.pc_nam.grid(row=2, column=1)
+
+        # ===== BUTTON =====
+        btn = tk.Frame(self.tab_assign)
+        btn.pack(pady=5)
+
+        tk.Button(btn, text="Thêm", bg="green", fg="white",
+                  command=self.add_pc).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(btn, text="Xóa", bg="orange",
+                  command=self.delete_pc).pack(side=tk.LEFT, padx=5)
+
+        tk.Button(btn, text="Load",
+                  command=self.load_pc).pack(side=tk.LEFT, padx=5)
+
+        # ===== TABLE =====
+        cols = ("gv", "hp", "lop", "hk", "nam")
+
+        self.tree_pc = ttk.Treeview(self.tab_assign, columns=cols, show="headings")
+
+        headers = ["Mã GV", "Mã HP", "Mã lớp", "HK", "Năm"]
+
+        for c, h in zip(cols, headers):
+            self.tree_pc.heading(c, text=h)
+            self.tree_pc.column(c, width=120)
+
+        self.tree_pc.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.tree_pc.bind("<<TreeviewSelect>>", self.on_select_pc)
+        self.load_pc()
+
+    def load_pc(self):
+        self.tree_pc.delete(*self.tree_pc.get_children())
+
+        try:
+            data = admin_service.get_all_phancong()
+
+            for r in data:
+                self.tree_pc.insert("", tk.END, values=(
+                    r[0],  # MaGV
+                    r[1],  # MaHP
+                    r[2],  # MaLop
+                    r[3],  # HocKy
+                    r[4]  # NamHoc
+                ))
+
+        except Exception as e:
+            messagebox.showerror("Lỗi", str(e))
+
+    def add_pc(self):
+        try:
+            if not all([
+                self.pc_gv.get(),
+                self.pc_hp.get(),
+                self.pc_lop.get(),
+                self.pc_hk.get(),
+                self.pc_nam.get()
+            ]):
+                messagebox.showwarning("Thiếu", "Nhập đầy đủ thông tin")
+                return
+
+            data = (
+                self.pc_gv.get(),
+                self.pc_hp.get(),
+                self.pc_lop.get(),
+                int(self.pc_hk.get()),
+                self.pc_nam.get()
+            )
+
+            admin_service.add_phancong(data)
+
+            messagebox.showinfo("OK", "Đã phân công")
+            self.load_pc()
+
+        except Exception as e:
+            messagebox.showerror("Lỗi", str(e))
+
+    def delete_pc(self):
+        sel = self.tree_pc.selection()
+        if not sel:
+            messagebox.showwarning("Thiếu", "Chọn dòng để xóa")
+            return
+
+        val = self.tree_pc.item(sel[0])["values"]
+
+        admin_service.delete_phancong(
+            val[0],  # MaGV
+            val[1],  # MaHP
+            val[2],  # MaLop
+            val[3],  # HocKy
+            val[4]  # NamHoc
+        )
+
+        messagebox.showinfo("OK", "Đã xóa")
+        self.load_pc()
+
+    def on_select_pc(self, event):
+        sel = self.tree_pc.selection()
+        if not sel:
+            return
+
+        val = self.tree_pc.item(sel[0])["values"]
+
+        self.pc_gv.delete(0, tk.END)
+        self.pc_gv.insert(0, val[0])
+
+        self.pc_hp.delete(0, tk.END)
+        self.pc_hp.insert(0, val[1])
+
+        self.pc_lop.delete(0, tk.END)
+        self.pc_lop.insert(0, val[2])
+
+        self.pc_hk.delete(0, tk.END)
+        self.pc_hk.insert(0, val[3])
+
+        self.pc_nam.delete(0, tk.END)
+        self.pc_nam.insert(0, val[4])
 
     def ui_hocphan(self):
         tk.Label(self.tab_courses, text="QUẢN LÝ HỌC PHẦN",

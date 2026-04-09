@@ -1,6 +1,5 @@
 from database.db import Database
 
-
 class AdminService:
 
     # ================= TÀI KHOẢN =================
@@ -114,6 +113,14 @@ class AdminService:
         try:
             sql = "EXEC spXemPhanCongTheoGV ?"
             return db.fetchall(sql, (magv,))
+        finally:
+            db.close()
+
+    @staticmethod
+    def get_all_phancong():
+        db = Database()
+        try:
+            return db.fetchall("SELECT * FROM PHANCONG")
         finally:
             db.close()
 

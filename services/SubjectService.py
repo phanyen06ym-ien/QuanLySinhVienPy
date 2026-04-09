@@ -1,6 +1,5 @@
 from database.db import Database
 
-
 class SubjectService:
 
     # ================= DANH SÁCH HỌC PHẦN =================
