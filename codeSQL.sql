@@ -750,38 +750,26 @@ CREATE OR ALTER PROCEDURE spNhapDiem
     @DiemCK DECIMAL(4,2)
 AS
 BEGIN
-    BEGIN TRY
-        -- Check đăng ký
-        IF NOT EXISTS (
-            SELECT 1 FROM DANGKY
-            WHERE MaSV=@MaSV AND MaHP=@MaHP 
-              AND HocKy=@HocKy AND NamHoc=@NamHoc
-        )
-        BEGIN
-            RAISERROR(N'Sinh viên chưa đăng ký học phần này.',16,1)
-            RETURN
-        END
-
-        -- Check đã có điểm chưa
-        IF EXISTS (
-            SELECT 1 FROM DIEM
-            WHERE MaSV=@MaSV AND MaHP=@MaHP 
-              AND HocKy=@HocKy AND NamHoc=@NamHoc
-        )
-        BEGIN
-            RAISERROR(N'Đã tồn tại điểm, dùng chức năng sửa.',16,1)
-            RETURN
-        END
-
+    IF EXISTS (
+        SELECT 1 FROM DIEM
+        WHERE MaSV=@MaSV AND MaHP=@MaHP 
+          AND HocKy=@HocKy AND NamHoc=@NamHoc
+    )
+    BEGIN
+        UPDATE DIEM
+        SET DiemChuyenCan=@DiemCC,
+            DiemBaiTap=@DiemBT,
+            DiemGiuaKy=@DiemGK,
+            DiemCuoiKy=@DiemCK
+        WHERE MaSV=@MaSV AND MaHP=@MaHP 
+          AND HocKy=@HocKy AND NamHoc=@NamHoc
+    END
+    ELSE
+    BEGIN
         INSERT INTO DIEM 
         VALUES (@MaSV, @MaHP, @HocKy, @NamHoc, @DiemCC, @DiemBT, @DiemGK, @DiemCK)
-
-    END TRY
-    BEGIN CATCH
-        DECLARE @Err NVARCHAR(500)=ERROR_MESSAGE()
-        RAISERROR(@Err,16,1)
-    END CATCH
-END;
+    END
+END
 GO
 -- [2] SỬA ĐIỂM
 CREATE OR ALTER PROCEDURE spSuaDiem
